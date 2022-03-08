@@ -1,40 +1,15 @@
 ---
 title: "Midterm III Study Guide and Review"
-author: "Deepak Bastola"
+author: "AJ Staff"
 date: "`r format(Sys.Date(), ' %B %d %Y')`"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
   word_document: default
 ---
 
 ## Exam III Study Guide
-
-Format: In class on Wed. 03/09, with open notes, open course resources and open R. No Google is allowed. You can use a calculator for mathematical calculations, if needed. You can use R for calculations too!
-
-### Topics
-
-- The exam covers baSIC web scraping, basic Shiny structure, classification algorithms including k-nearest neighbors, logistic regression, random forest and unsupervised learning algorithm, especially k-means. (through Mon 03/07). 
-
-- You will be tested on your understanding of the R code and machine learning algorithms we have discussed. You will **not** be tested on complicated R-codes. Additional ways I could assess your understanding of R include (but are not limited to):
-
-  - Filling in missing arguments/lines of code.
-  - Identifying the error in written code.
-  - Putting lines of code in order to complete a specified task.
-  - Describing the output resulting from a code chunk.
-
-*Disclaimer:* This list may not be exhaustive, but I hope that you find it useful in preparing for the exam.
-
-1. Shiny. Understand the flow between input objects and rendered objects. Do not worry about layout options but make sure you understand the use of basic inputs like select, slider or radio buttons.
-
-2. Scraping data from the web. Be able to read or write (basic) code to scrape data using `rvest`/`polite`. I won’t be asking questions about obscure HTML tags or CSS nodes, so focus on the basics/fundamentals like how you go from an HTML page to a data frame.
-
-3. Classification (supervised learning). Understand the goals of classification problems and how to evaluate a classifier using the metrics discussed in class (accuracy, sensitivity, specificity, precision). Understand what each of the following classification methods is doing, how they compare, and how to implement them in R (reading the output is key here): knn, logistic regression, and random forests. Be able to explain how each of these algorithm works.
-
-4. Cross validation. Be able to explain how the CV algorithm works. Why do we create a training and testing data set? How does k-fold cross validation work? How can you use k-fold cross validation to tune your classifier?
-
-5. Unsupervised learning (k-means clustering). Understand the goal of unsupervised learning and how the k-means algorithm works.
 
 
 ```{r setup, include=FALSE}
@@ -66,7 +41,7 @@ Smarket_train <- training(split)
 Smarket_test <- testing(split)
 ```
 
-*Answer:*
+*Answer:* The data set is loaded in, then feeded into `initial_split` which divides the data set into a training set and a test set. Since `prop` is also specified, this means that the first 4/5 samples for training. 
 
 ## Q2. Evaluate the following trained model to produce a data-frame of the actual and predicted `Direction` in the test dataset. Call this data-frame `Smarket_results`.
 
@@ -87,21 +62,41 @@ Smarket_fit <- fit(Smarket_workflow, data = Smarket_train)
 
 
 ```{r}
-# Evaluate
-# Your code here
+tree_fit <- Smarket_fit %>%
+extract_fit_parsnip()
+
+tree_fit
 ```
 
 
 Q3. Construct a confusion matrix from the prediction results from Q2. Calculate by hand the sensitivity, specificity, accuracy, and positive predictive value of the classifier.
 
-*Answer:* Your answer here..
+*Answer:* 
+
+Sensitivity: True Positives/(True Positives+False Negatives)= 72/(72+58) = .554
+Specificity: True Negatives/(True Negatives+False Positives)= 50/(50+71) = .413
+Accuracy: = True Positives + True Negatives / (True Positives + True Negatives + False
+Positives + False Negatives) = (72+50)/(72+50+71+58) = .486
+
+```{r}
+tree_last_fit <- Smarket_workflow %>%
+last_fit(split)
+
+tree_predictions <- tree_last_fit %>% collect_predictions()
+conf_mat(tree_predictions, truth = Direction, estimate = .pred_class)
+```
+
 
 
 
 Q4. Now, run a 10-fold cross validation using appropriate functions in `tidymodels` package by adding `tune()` as a placeholder for the number of neighbors. Find an optimal number of nearest neighbor. What metrics did you base your conclusion on?
 
 ```{r}
-# Your code here
+Smarket_folds <- vfold_cv(Smarket_train, v = 10, strata = Direction)
+tree_grid <- grid_regular(cost_complexity(),
+                          tree_depth(),
+                          min_n(),
+                          levels = 2)
 ```
 
 
@@ -109,13 +104,14 @@ Q5. Give your answers to the following set of problems.
 
 a. Explain the difference between unsupervised learning and supervised learning. 
 
-*Answer:*
+*Answer:* It has partially to do with the labeling of the data. Unsupervised learning is when the data is unlabeled, and supervised is when it is pre-labeled. 
 
 
 
 b. Explain how you can use total within cluster sum of squares to find the "best" choice of K in a K-means clustering algorithm.
 
-*Answer:*
+*Answer:* The total within-cluster variation is the sum of squared Euclidean distances between
+items, and by calculating distances from the centroid, we are able to iteratively find the "best" arrangment. 
 
 
 c. Suppose your friend wants to design an app that allows the user to set a number (x) between 1 and 1000, and displays it's logarithm (base 10). His trial produced an error. Modify the following code to rectify the error.
@@ -128,8 +124,8 @@ ui <- fluidPage(
   textOutput("logarithm")
 )
 server <- function(input, output, session) {
-  output$text <- renderText({ 
-    log10(x)
+  output$logarithm <- renderText({ 
+    log10(input$x)
   })
 }
 shinyApp(ui, server)
@@ -138,7 +134,7 @@ shinyApp(ui, server)
 
 d. Briefly explain why do we preprocess data in k nearest neighbors algorithm.
 
-*Answer:*
+*Answer:* This allows the data to be more suitable for a classifier, and thus use our observed data to make predictions. 
 
 
 
@@ -151,4 +147,4 @@ table_covid_cases <- bow(url = "https://usafacts.org/visualizations/coronavirus-
   html_table()
 ```
 
-*Answer:*
+*Answer:* Scrapes the table at the bottom of that link which is covid spread data on the state of Minnesota. 
